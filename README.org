@@ -1,0 +1,268 @@
+#+TITLE: LDmeta: A Vocabulary for Describing Datasets in the Real World
+#+AUTHOR: Wouter Beek
+
+While many vocabularies exist that claim to be able to describe
+dataset metadata, none of them is able to describe some of the most
+common real world dataset deployments.  This is in line with the
+empirical observation that usable dataset metadata descriptions do not
+occur in the wild.
+
+LDmeta is an attempt to formulate a dataset metadata vocabulary that
+can actually be used to describe datasets, dataset distributions, and
+location on the internet where such distributions might be downloaded
+from (or otherwise accessed).
+
+* Criteria
+
+This section enumerates criteria that should be met by a dataset
+metadata vocabulary in order to be useful.
+
+** A dataset metadata description must allow accurate data to be specified
+
+VoID fails at this criterion, since it specifically allows inaccurate
+data to be specified, while in the same process disallowing accutate
+data to be specified.
+
+** It must be possible to describe datasets with more than one distribution
+
+** It must be possible to describe distributions with more than one file
+
+Both DCAT and VoID fail at this since properties like ~void:format~,
+~dcat:byteSize~, ~dcat:last-modified~, and ~dcat:mediaType~ can only
+be specified for datasets (VoID) or distributions (DCAT).
+
+** It must be in line with the main RDF 1.1 standards
+
+VoID fails at this, since it defines a dataset as:
+
+#+BEGIN_QUOTE
+A set of RDF triples that are published, maintained or aggregated by a
+single provider.
+#+END_QUOTE
+
+The RDF 1.1 standards specify a dataset as consisting of a single
+default graph and an arbitrary number of named graphs.
+
+* LDmeta
+
+LDmeta is a dataset metadata vocabulary that tries to implement the
+criteria specified in the previous section.  We use alias ~ldm~ to
+denote IRI prefix ~https://ldm.cc/~.
+
+** Classes
+*** ~ldm:Dataset~
+
+#+BEGIN_SRC ttl
+ldm:Dataset a rdfs:Class;
+  rdfs:comment "<div lang="en"><p>An RDF dataset is a collection of RDF graphs, and comprises:</p><ul><li>Exactly one default graph, being an RDF graph.  The default graph does not have a name and MAY be empty.</li><li>Zero or more named graphs.  Each named graph is a pair consisting of an IRI or a blank node (the graph name), and an RDF graph. Graph names are unique within an RDF dataset.</li></ul></div>"^^rdf:HTML;
+  rdfs:label "class"@en.
+#+END_SRC
+
+*** ~ldm:Distribution~
+
+#+BEGIN_SRC ttl
+ldm:Distribution a rdfs:Class;
+  rdfs:comment "A concrete representation of a dataset in terms of electronic files."@en;
+  rdfs:label "distribution"@en.
+#+END_SRC
+
+*** ~ldm:File~
+
+#+BEGIN_SRC ttl
+ldm:File a rdfs:Class;
+  rdfs:comment "A binary file that can be stored on a computer and transmitted over a network."@en;
+  rdfs:label "file"@en.
+#+END_SRC
+
+** Properties
+*** ~ldm:byteSize~
+#+BEGIN_SRC ttl
+ldm:byteSize a rdf:Property;
+  rdfs:comment "The number of bytes contains in a specific file."@en;
+  rdfs:domain ldm:File;
+  rdfs:label "byte size"@en
+  rdfs:range ldm:Distribution.
+#+END_SRC
+
+*** ~ldm:distribution~
+#+BEGIN_SRC ttl
+ldm:distribution a rdf:Property;
+  rdfs:comment "A dataset can have one or more distributions."@en;
+  rdfs:domain ldm:Dataset;
+  rdfs:label "distribution"@en;
+  rdfs:range ldm:Distribution.
+#+END_SRC
+
+*** ~ldm:downloadLocation~
+#+BEGIN_SRC ttl
+ldm:downloadLocation a rdf:Property;
+  rdfs:comment "The location from which an electronic file can be downloaded.  The same file may be downloaded form multiple locations."@en;
+  rdfs:domain ldm:File;
+  rdfs:label "download location"@en;
+  rdfs:range xsd:anyURI.
+#+END_SRC
+
+*** ~ldm:encoding~
+#+BEGIN_SRC ttl
+ldm:encoding a rdf:Property;
+  rdfs:comment "The encoding of a specific file."@en;
+  rdfs:domain ldm:File;
+  rdfs:label "encoding"@en;
+  rdfs:range xsd:string.
+#+END_SRC
+
+*** ~ldm:file~
+#+BEGIN_SRC ttl
+ldm:file a rdf:Property
+  rdfs:comment "A distribution can contain one or more files."@en;
+  rdfs:domain ldm:Distribution;
+  rdfs:label "file"@en;
+  rdfs:range ldm:File.
+#+END_SRC
+
+*** ~ldm:fileName~
+#+BEGIN_SRC ttl
+ldm:fileName a rdf:Property;
+  rdfs:comment "The name of a file.  This is typically componend of a base name, followed by a dot, followed by a file extension."@en;
+  rdfs:domain ldm:File;
+  rdfs:label "file name"@en;
+  rdfs:range xsd:string.
+#+END_SRC
+
+*** ~ldm:mediaType~
+#+BEGIN_SRC ttl
+ldm:mediaType a rdf:Property;
+  rdfs:comment "The Media Type of a specific file."@en;
+  rdfs:domain ldm:File;
+  rdfs:label "media type"@en;
+  rdfs:range xsd:string.
+#+END_SRC
+
+* Problems with other vocabularies
+** DCAT
+*** DCAT cannot accurately describe a distribution with more than one file
+
+For example, the following is a correct DCAT description.  It is not
+possible to publish ~<file1>~ and ~<file2>~ as part of the same
+distributions, since the Media Types can then no longer be related to
+the appropriate files.
+
+#+BEGIN_SRC ttl
+<dataset> a dcat:Dataset;
+  dcat:distribution
+    <distribution1>,
+    <distribution2>.
+
+<distribution1> a dcat:Distribution;
+  dcat:downloadURL <file1>;
+  dcat:mediaType "text/xml".
+
+<distribution2> a dcat:Distribution;
+  dcat:downloadURL <file2>;
+  dcat:mediaType "application/json".
+#+END_SRC
+
+*** Unnecessarily broad range specification
+
+The range of ~dcat:byteSize~ is ~xsd:decimal~.  Since it does not
+possible for byte-sizes to be non-whole numbers or negative numbers,
+this range specification is unnecessarily broad, facilitating
+incorrect descriptions.  (This is why the range of ~ldm:byteSize~ is
+~xsd:nonNegativeInteger~.)
+
+** VoID
+*** VoID properties mix syntactic criteria with semantic criteria
+
+Some VoID statistics properties are about the number of syntactic
+terms (e.g., ~void:distinctSubjects~, ~void:distinctObjects~), while
+others are about the number of semantic objects (e.g., ~void:classes~,
+~void:properties~).  In practice, this leads to confusion, as most
+people seem to use the semantic properties in a syntactic way.  E.g.,
+the following RDF snippet will often be characterized as containing
+one distinct property, even though it in fact contains two such
+properties:
+
+#+BEGIN_SRC ttl
+rdfs:subClassOf rdfs:domain rdfs:Class.
+#+END_SRC
+
+*** The values for some VoID properties are inherently impossible to specify
+
+On the Semantic Web, it is generally not possible to determine whether
+or not two (syntactic) terms do or do not denote the same property or
+class.  This means that the properties ~void:properties~ and
+~void:classes~ cannot be specified.  For example, the following RDF
+snippet contains two distinct class-denoting terms, but this does not
+imply that the snippet also references two distinct classes.
+
+#+BEGIN_SRC ttl
+<s:s> a <c:c> , <d:d>.
+#+END_SRC
+
+Since in Linked Data it is common for data sources to make (schema)
+assertions about terms that also appear in other data sources, some
+other data source may or may not contain the following triples:
+
+#+BEGIN_SRC ttl
+<c:c> owl:sameAs <d:d>.
+#+END_SRC
+
+*** A dataset that has at least two files in two different serialization formats cannot be described
+
+Is it possible to represent the very common case in which one dataset
+is serialized into two or more RDF serialization formats.  VoID
+includes the ~void:feature~ property, which seems to be included for
+this specific purpose.  With this property it is possible to describe
+a dataset that has two dump files, one of which is encoded in RDF/XML
+while the other is encoded in Turtle.  Unfortunately, it is not
+possible to encode which file uses which encoding.
+
+#+BEGIN_SRC ttl
+<dataset> a void:Dataset;
+  void:dataDump
+    <file1>,
+    <file2>;
+  void:feature
+    formats:RDF_XML,
+    formats:Turtle.
+#+END_SRC
+
+*** VoID allows statistical values to be incorrect
+
+The VoID vocabulary standard contains the following piece of text:
+
+#+BEGIN_QUOTE
+As a general rule, statistics in VoID can always be provided as
+approximate numbers.
+#+END_QUOTE
+
+This statement allows the fomulation of dataset metadata descriptions
+that are incorrect.  However, it has a far worse and far-reaching
+consequence: VoID does not only allow inaccurate metadata to exist, it
+prevents accurate metadata from being expressed.
+
+Suppose I want to publish a dataset with exactly 1,000 triples, and I
+want to assert that as a fact:
+
+#+BEGIN_SRC ttl
+<dataset> a void:Dataset;
+  void:triples "1000"^^xsd:nonNegativeInteger.
+#+END_SRC
+
+A data consumer that reads the above Turtle snippet is unable to
+determine the size of the described dataset, even if the data consumer
+believes the metadata description to be true.
+
+* Used prefixes
+
+This README file uses the following RDF prefix declarations:
+
+| *Alias* | *IRI prefix*                                |
+|---------+---------------------------------------------|
+| formats | http://www.w3.org/ns/formats/               |
+| ldm     | https://ldm.cc/                             |
+| owl     | http://www.w3.org/2002/07/owl#              |
+| rdf     | http://www.w3.org/1999/02/22-rdf-syntax-ns# |
+| rdfs    | http://www.w3.org/2000/01/rdf-schema#       |
+| void    | http://rdfs.org/ns/void#                    |
+| xsd     | http://www.w3.org/2001/XMLSchema#           |
