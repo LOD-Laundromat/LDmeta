@@ -1,0 +1,61 @@
+prefix: formats: <http://www.w3.org/ns/formats/>
+prefix: ldm: <https://ldm.cc/>
+prefix: owl: <http://www.w3.org/2002/07/owl#>
+prefix: rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+prefix: rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix: void: <http://rdfs.org/ns/void#>
+prefix: xsd: <http://www.w3.org/2001/XMLSchema#>
+
+ldm:Dataset a rdfs:Class;
+  rdfs:comment "<div lang="en"><p>An RDF dataset is a collection of RDF graphs, and comprises:</p><ul><li>Exactly one default graph, being an RDF graph.  The default graph does not have a name and MAY be empty.</li><li>Zero or more named graphs.  Each named graph is a pair consisting of an IRI or a blank node (the graph name), and an RDF graph. Graph names are unique within an RDF dataset.</li></ul></div>"^^rdf:HTML;
+  rdfs:label "class"@en.
+
+ldm:Distribution a rdfs:Class;
+  rdfs:comment "A concrete representation of a dataset in terms of electronic files."@en;
+  rdfs:label "distribution"@en.
+
+ldm:File a rdfs:Class;
+  rdfs:comment "A binary file that can be stored on a computer and transmitted over a network."@en;
+  rdfs:label "file"@en.
+
+ldm:byteSize a rdf:Property;
+  rdfs:comment "The number of bytes contains in a specific file."@en;
+  rdfs:domain ldm:File;
+  rdfs:label "byte size"@en
+  rdfs:range ldm:Distribution.
+
+ldm:distribution a rdf:Property;
+  rdfs:comment "A dataset can have one or more distributions."@en;
+  rdfs:domain ldm:Dataset;
+  rdfs:label "distribution"@en;
+  rdfs:range ldm:Distribution.
+
+ldm:downloadLocation a rdf:Property;
+  rdfs:comment "The location from which an electronic file can be downloaded.  The same file may be downloaded form multiple locations."@en;
+  rdfs:domain ldm:File;
+  rdfs:label "download location"@en;
+  rdfs:range xsd:anyURI.
+
+ldm:encoding a rdf:Property;
+  rdfs:comment "The encoding of a specific file."@en;
+  rdfs:domain ldm:File;
+  rdfs:label "encoding"@en;
+  rdfs:range xsd:string.
+
+ldm:file a rdf:Property
+  rdfs:comment "A distribution can contain one or more files."@en;
+  rdfs:domain ldm:Distribution;
+  rdfs:label "file"@en;
+  rdfs:range ldm:File.
+
+ldm:fileName a rdf:Property;
+  rdfs:comment "The name of a file.  This is typically componend of a base name, followed by a dot, followed by a file extension."@en;
+  rdfs:domain ldm:File;
+  rdfs:label "file name"@en;
+  rdfs:range xsd:string.
+
+ldm:mediaType a rdf:Property;
+  rdfs:comment "The Media Type of a specific file."@en;
+  rdfs:domain ldm:File;
+  rdfs:label "media type"@en;
+  rdfs:range xsd:string.
